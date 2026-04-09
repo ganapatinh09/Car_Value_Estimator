@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Car Price Predictor</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body.bg-dark {
+            background-color: rgb(112, 237, 137);
+            background-image: url(car1.jpg);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: rgba(145, 193, 198, 0.49);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .card-header h1 {
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 80%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #1778e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #446b90;
+        }
+
+        #prediction {
+            margin-top: 20px;
+            font-size: 20px;
+            color: #090909;
+        }
+    </style>
+</head>
+<body class="bg-dark">
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h1>Welcome to Car Value Estimator</h1>
+        </div>
+        <div class="card-body">
+            <h5>It predicts the value of a car you want to sell. Try filling the details below:</h5>
+            <form id="predictionForm" method="POST">
+                <div class="form-group">
+                    <label>Select car company:</label><br>
+                    <select id="company" name="company" required="1" class="form-control" onchange="fetchCarModels()">
+                        {% for company in companies %}
+                        <option value="{{ company }}">{{ company }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Select car model:</label><br>
+                    <select id="car_models" name="car_models" required="1" class="form-control">
+                        <option value="" disabled selected>Select a model</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Enter car purchased year:</label><br>
+                    <input type="text" id="year" name="year" required="1" class="form-control" placeholder="Enter year of purchase">
+                </div>
+
+                <div class="form-group">
+                    <label>Select the Fuel Type:</label><br>
+                    <select id="fuel_type" name="fuel_type" required="1" class="form-control">
+                        <option value="" disabled selected>Select fuel type</option>
+                        {% for fuel in fuel_types %}
+                        <option value="{{ fuel }}">{{ fuel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Enter the Number of Kilometres car has travelled:</label><br>
+                    <input type="text" id="kilo_driven" name="kilo_driven" class="form-control" placeholder="Enter the kilometres driven">
+                </div>
+
+                <div class="form-group">
+                    <button type="button" onclick="send_data()">Predict Price</button>
+                </div>
+            </form>
+            <div id="prediction"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function fetchCarModels() {
+        var company = document.getElementById("company").value;
+
+        fetch('/get_car_models', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ company: company })
+        })
+        .then(response => response.json())
+        .then(data => {
+            var carModelSelect = document.getElementById("car_models");
+            carModelSelect.innerHTML = ''; // Clear previous options
+
+            var defaultOption = document.createElement("option");
+            defaultOption.text = 'Select a model';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            carModelSelect.add(defaultOption);
+
+            data.car_models.forEach(function (model) {
+                var option = document.createElement("option");
+                option.text = model;
+                option.value = model;
+                carModelSelect.add(option);
+            });
+        });
+    }
+
+    function send_data() {
+        var form = document.getElementById('predictionForm');
+        var fd = new FormData(form);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/predict', true);
+
+        document.getElementById('prediction').innerHTML = "Wait! Predicting Price.....";
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                document.getElementById('prediction').innerHTML = "Prediction: ₹" + xhr.responseText;
+            }
+        };
+
+        xhr.send(fd);
+    }
+</script>
+
+</body>
+</html>
